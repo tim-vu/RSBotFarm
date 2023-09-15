@@ -1,0 +1,128 @@
+plugins {
+    id 'java'
+    id 'java-library'
+    id 'org.openapi.generator' version '6.6.0'
+}
+
+group = 'net.rlbot'
+version = '1.0'
+
+repositories {
+    mavenLocal()
+    google()
+    mavenCentral()
+    maven {
+        url 'https://repo.runelite.net'
+        content {
+            includeGroupByRegex "net\\.runelite.*"
+        }
+    }
+}
+
+def lastSupportedVersion = "1.10.10.2"
+def runeLiteVersion = "1.10.10.2"
+def supportedCheck = true
+if (supportedCheck) {
+    if (runeLiteVersion != lastSupportedVersion) {
+        println("Warning - client has been updated")
+        throw new Exception("Out of date (last supported: " + lastSupportedVersion + " current client: " + runeLiteVersion + ")")
+    }
+}
+
+static def getRuneLiteVersion() {
+    URL url = new URL("http://repo.runelite.net/net/runelite/client/maven-metadata.xml")
+    URLConnection urlConnection = url.openConnection()
+    BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(
+            urlConnection.getInputStream()))
+    String latestName = null
+    String inputLine
+    while ((inputLine = bufferedReader.readLine()) != null) {
+        inputLine = inputLine.trim()
+        if (inputLine.contains("<release>")) {
+            latestName = inputLine.replace("<release>", "").replace("</release>", "")
+        }
+    }
+    bufferedReader.close()
+    return latestName
+}
+
+dependencies {
+    implementation project(':api')
+    implementation group: 'net.runelite', name: 'client', version: runeLiteVersion
+    implementation group: 'net.runelite', name: 'jshell', version: '1.10.7-SNAPSHOT'
+
+    implementation group: 'com.formdev', name: 'flatlaf', version: '3.1.1'
+
+    implementation 'com.squareup.okhttp3:okhttp'
+    implementation 'com.google.code.gson:gson'
+    implementation 'javax.annotation:javax.annotation-api'
+    implementation 'javax.ws.rs:javax.ws.rs-api'
+    implementation 'com.squareup.okhttp3:logging-interceptor'
+    implementation 'io.gsonfire:gson-fire'
+    implementation 'com.google.code.findbugs:jsr305'
+
+    implementation 'dev.failsafe:failsafe:3.3.1'
+
+    implementation group: 'org.codehaus.janino', name: 'janino', version: '3.1.9'
+
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+    compileOnly 'org.jetbrains:annotations'
+}
+
+compileJava {
+    dependsOn 'openApiGenerate'
+}
+
+openApiGenerate {
+    generatorName = "java"
+    remoteInputSpec = "http://localhost:5043/swagger/Clients/swagger.json"
+    outputDir = "$buildDir/generated"
+    apiPackage = "net.rlbot.client.api"
+    invokerPackage = "net.rlbot.client.api.invoker"
+    modelPackage = "net.rlbot.client.api.model"
+    removeOperationIdPrefix = true
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir("$buildDir/generated/src/main/java")
+        }
+    }
+}
+jar {
+    manifest.attributes('Main-Class': 'net.rlbot.client.Program')
+    archiveFileName = 'client.jar'
+    destinationDirectory.set(file("$rootDir/build"))
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+tasks.register('run', JavaExec) {
+    group = "Execution"
+    description = "Runs the bot"
+    classpath = sourceSets.main.runtimeClasspath + sourceSets.main.compileClasspath
+//    jvmArgs = ['-Dawt.useSystemAAFontSettings=on', '-Dswing.aatext=true', '-Xms512m', '-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005']
+    jvmArgs = ['-Xmx512m', '-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005']
+//    args = ['-botId', 'worker']
+    getMainClass() set "net.rlbot.client.Program"
+}
+
+tasks.register('runelite', JavaExec) {
+    group = "Execution"
+    classpath = sourceSets.main.runtimeClasspath + sourceSets.main.compileClasspath
+    jvmArgs = ['-Dawt.useSystemAAFontSettings=on', '-Dswing.aatext=true', '-ea']
+    args = ['--debug', '--developer-mode']
+    getMainClass() set "net.runelite.client.RuneLite"
+}
+
+tasks.register('jarWithDeps', Copy) {
+    group = 'build'
+    dependsOn 'jar'
+    into "$rootDir/build/lib"
+    from configurations.runtimeClasspath
+}

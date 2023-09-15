@@ -1,0 +1,63 @@
+plugins {
+    id 'java-library'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
+    id 'org.openapi.generator' version "6.6.0"
+}
+
+group = 'net.rlbot'
+version = '1.0'
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+dependencies {
+    compileOnly project(':api')
+    implementation project(':scripts:framework')
+
+
+    compileOnly 'com.squareup.okhttp3:okhttp'
+    compileOnly 'com.google.code.gson:gson'
+    compileOnly 'javax.annotation:javax.annotation-api'
+    compileOnly 'javax.ws.rs:javax.ws.rs-api'
+    compileOnly 'com.squareup.okhttp3:logging-interceptor'
+    compileOnly 'io.gsonfire:gson-fire'
+    compileOnly 'com.google.code.findbugs:jsr305'
+
+//    implementation 'org.conscrypt:conscrypt-android:2.2.1'
+
+    compileOnly 'org.slf4j:slf4j-api'
+    compileOnly 'org.projectlombok:lombok:1.18.24'
+    annotationProcessor 'org.projectlombok:lombok:1.18.24'
+    compileOnly 'org.jetbrains:annotations:24.0.1'
+}
+
+compileJava {
+    dependsOn 'openApiGenerate'
+}
+
+
+openApiGenerate {
+    generatorName = "java"
+    remoteInputSpec = "http://localhost:5043/swagger/Mules/swagger.json"
+    outputDir = "$buildDir/generated"
+    apiPackage = "net.rlbot.muler.api"
+    invokerPackage = "net.rlbot.muler.api.invoker"
+    modelPackage = "net.rlbot.muler.api.model"
+    removeOperationIdPrefix = true
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir("$buildDir/generated/src/main/java")
+        }
+    }
+}
+
+shadowJar {
+    group = 'build'
+    dependsOn jar
+    destinationDirectory = file(System.properties['user.home'] + '/.osrsbot/scripts')
+}

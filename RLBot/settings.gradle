@@ -1,0 +1,10 @@
+rootProject.name = 'rlbot'
+include ':api'
+include ':client'
+include 'scripts:framework'
+include 'scripts:zc-airorbs'
+include 'scripts:mule'
+include 'scripts:zc-accountbuilder'
+include 'scripts:zc-barrows'
+findProject(':scripts:zc-barrows')?.name = 'zc-barrows'
+

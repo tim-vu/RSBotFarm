@@ -1,0 +1,27 @@
+plugins {
+    id 'java-library'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
+}
+
+group = 'net.rlbot'
+version = '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compileOnly project(':api')
+    implementation project(':scripts:framework')
+
+    compileOnly 'org.slf4j:slf4j-api'
+    compileOnly 'org.projectlombok:lombok:1.18.24'
+    annotationProcessor 'org.projectlombok:lombok:1.18.24'
+    compileOnly 'org.jetbrains:annotations:24.0.1'
+}
+
+shadowJar {
+    group = 'build'
+    dependsOn jar
+    destinationDirectory = file(System.properties['user.home'] + '/.osrsbot/scripts')
+}

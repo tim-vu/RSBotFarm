@@ -1,0 +1,72 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+}
+
+group = 'net.rlbot'
+version = '1.0'
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+    maven {
+        url 'https://repo.runelite.net'
+        content {
+            includeGroupByRegex "net\\.runelite.*"
+        }
+    }
+}
+
+def lastSupportedVersion = "1.10.10.2"
+def runeLiteVersion = "1.10.10.2"
+def supportedCheck = true
+if (supportedCheck) {
+    if (runeLiteVersion != lastSupportedVersion) {
+        println("Warning - client has been updated")
+        throw new Exception("Out of date (last supported: " + lastSupportedVersion + " current client: " + runeLiteVersion + ")")
+    }
+}
+
+
+
+static def getRuneLiteVersion() {
+    URL url = new URL("http://repo.runelite.net/net/runelite/client/maven-metadata.xml")
+    URLConnection urlConnection = url.openConnection()
+    BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(
+            urlConnection.getInputStream()))
+    String latestName = null
+    String inputLine
+    while ((inputLine = bufferedReader.readLine()) != null) {
+        inputLine = inputLine.trim()
+        if (inputLine.contains("<release>")) {
+            latestName = inputLine.replace("<release>", "").replace("</release>", "")
+        }
+    }
+    bufferedReader.close()
+    return latestName
+}
+
+dependencies {
+    api group: 'net.logstash.logback', name: 'logstash-logback-encoder', version: '6.3'
+
+    implementation group: 'javax.inject', name: 'javax.inject', version: '1'
+    implementation group: 'org.locationtech.jts', name: 'jts-core', version: '1.19.0'
+    //noinspection VulnerableLibrariesLocal
+    implementation 'com.google.inject:guice:4.1.0:no_aop'
+    implementation group: 'net.runelite', name: 'runelite-api', version: runeLiteVersion
+    implementation group: 'net.runelite', name: 'client', version: runeLiteVersion
+    implementation group: 'net.runelite', name: 'cache', version: runeLiteVersion
+
+    compileOnly 'org.slf4j:slf4j-api'
+    compileOnly 'org.projectlombok:lombok:1.18.24'
+    annotationProcessor 'org.projectlombok:lombok:1.18.24'
+    compileOnly 'org.jetbrains:annotations:24.0.1'
+}
+
+publishing {
+    publications {
+        api(MavenPublication) {
+            from(components.java)
+        }
+    }
+}

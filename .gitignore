@@ -1,0 +1,7 @@
+build/
+obj/
+bin/
+*.sln.DotSettings.user
+.gradle/
+.idea/
+.vscode/
